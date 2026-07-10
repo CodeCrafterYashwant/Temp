@@ -108,6 +108,8 @@ form.addEventListener("submit", async (e) => {
 });
 
 function redirectUser(role) {
+  console.log(role);
+  
   if (role === "student") {
     window.location.href = "../student dashboard/studentdashboard.html"; 
   } else if (role === "faculty") {
