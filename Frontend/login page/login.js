@@ -4,6 +4,24 @@ const form = document.getElementById("loginForm");
 const loginBtn = document.getElementById("loginBtn");
 const messageBox = document.getElementById("messageBox");
 
+// --- Cookie Helper Functions ---
+function setCookie(name, value, days = 7) {
+  const date = new Date();
+  date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+  const expires = "expires=" + date.toUTCString();
+  // We use encodeURIComponent to safely store JSON or JWTs
+  document.cookie = name + "=" + encodeURIComponent(value) + ";" + expires + ";path=/";
+}
+
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    return decodeURIComponent(parts.pop().split(';').shift());
+  }
+  return null;
+}
+
 // --- 1. Helper: Parse JWT to get Role ---
 function parseJwt(token) {
   try {
@@ -20,7 +38,7 @@ function parseJwt(token) {
 
 // --- 2. Check Auth on Page Load (Auto-Redirect) ---
 document.addEventListener("DOMContentLoaded", () => {
-  const token = localStorage.getItem("token");
+  const token = getCookie("token"); // Changed from localStorage
   if (token) {
     const decoded = parseJwt(token);
     if (decoded && decoded.role) {
@@ -59,15 +77,17 @@ form.addEventListener("submit", async (e) => {
     const data = await res.json();
 
     if (res.ok && data.token) {
-      // 1. Save Token
-      localStorage.setItem("token", data.token);
+      // 1. Save Token to Cookies (expires in 7 days by default)
+      setCookie("token", data.token);
 
       // 2. Decode Token to find Role
       const decodedToken = parseJwt(data.token);
       let userRole = decodedToken ? decodedToken.role : (data.user ? data.user.role : null);
 
       if (userRole) {
-        localStorage.setItem("user", JSON.stringify({ email, role: userRole }));
+        // Save User Data to Cookies
+        setCookie("user", JSON.stringify({ email, role: userRole }));
+        
         showMessage("Login successful! Redirecting...", "success");
         setTimeout(() => {
           redirectUser(userRole);
